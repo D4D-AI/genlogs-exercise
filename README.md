@@ -54,8 +54,10 @@ map; the carrier search itself works without it.
 
 ## Deployment
 
-Deployed to AWS `us-west-2`, verified end-to-end (all three routes, CORS, HTTPS), then **torn
-down to avoid charges**. Stack:
+Deployed to AWS `us-west-2`, verified end-to-end (all three routes, CORS, HTTPS), and **live
+for the review period**. The live URL is shared with the reviewer directly rather than
+committed here — the Maps key is embedded in the browser bundle, so keeping the URL out of the
+public repo avoids casual abuse; the environment is torn down after review. Stack:
 
 - **Backend** — FastAPI as a Lambda container image (Mangum) behind an API Gateway HTTP API.
   (App Runner and public Lambda Function URLs are both blocked on this account, hence this path.)
