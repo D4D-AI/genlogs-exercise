@@ -1,0 +1,21 @@
+# OS
+.DS_Store
+
+# Secrets / local env (never commit real values; *.example is committed)
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node / build output
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Installers / local artifacts
+AWSCLIV2.pkg

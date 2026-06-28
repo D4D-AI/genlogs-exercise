@@ -1,0 +1,10 @@
+# AWS Lambda container image: FastAPI behind Mangum, fronted by an API Gateway HTTP API.
+FROM public.ecr.aws/lambda/python:3.11
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app ./app
+
+# module.function of the Mangum handler defined in app/main.py
+CMD ["app.main.handler"]

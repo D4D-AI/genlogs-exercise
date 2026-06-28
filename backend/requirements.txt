@@ -1,0 +1,8 @@
+# Lower-bound pins: pip resolves wheels matching the local Python (works on 3.11 in the
+# Dockerfile and on newer interpreters used for local dev).
+fastapi>=0.115
+uvicorn[standard]>=0.34
+pydantic>=2.10
+mangum>=0.17
+httpx>=0.28
+pytest>=8.3
