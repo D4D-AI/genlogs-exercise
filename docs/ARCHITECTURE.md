@@ -26,11 +26,12 @@ these three constraints.
 1. **Capture / ingestion:** cameras capture HD images and emit capture events; an ingestion
    gateway writes raw images to object storage and sighting events to a stream.
 2. **Detection (computer vision, CV):** runs detection per image (plate OCR, truck ID numbers, logos) with
-   confidence scores.
+   confidence scores, writing each raw *detection* (what it read from the pixels, before
+   resolution) to the detection store.
 3. **Carrier resolution / enrichment:** extracts the USDOT number and resolves it to a
    carrier/vehicle via the FMCSA registry (see Carrier data acquisition), with a cache.
-4. **Sighting store:** persists enriched sightings (camera, time, vehicle, carrier, image
-   reference).
+4. **Detection & sighting store:** persists raw detections and the enriched *sightings* they
+   resolve into (a detection tied to a vehicle/carrier; camera, time, image reference).
 5. **Processing:**
    - *Real-time path:* enriches and indexes sightings as they arrive (supports future live
      tracking).
@@ -48,9 +49,10 @@ flowchart LR
   ING -->|capture event| STR[[Sighting stream]]
   STR --> DET[Detection CV]
   DET -->|get image by ref| S3
-  DET --> ENR[Carrier resolution]
+  DET --> DETS[(Detections)]
+  DETS --> ENR[Carrier resolution]
   ENR -->|lookup| REG[(FMCSA registry/cache)]
-  ENR --> SGT[(Sighting store)]
+  ENR --> SGT[(Sightings)]
   SGT --> RT[Real-time processing]
   SGT --> BAT[Batch aggregation]
   BAT --> CV[(carrier_volume aggregates)]
@@ -71,15 +73,17 @@ sequenceDiagram
   participant I as Ingestion
   participant S3 as S3
   participant D as Detection
+  participant DT as Detections
   participant E as Carrier resolution
   participant R as FMCSA registry/cache
-  participant S as Sighting store
+  participant S as Sightings
   C->>I: HD image + capture event
   I->>S3: store raw image (return key)
-  I->>D: enqueue sighting (image ref)
+  I->>D: enqueue detection job (image ref)
   D->>S3: get image (by ref)
   S3-->>D: image bytes
   D->>D: detect plate, USDOT, logo
+  D->>DT: write raw detection
   D->>E: detected USDOT
   E->>R: lookup USDOT
   alt hit
@@ -88,7 +92,7 @@ sequenceDiagram
     E->>R: fetch from bulk registry / live SAFER API, then cache
     R-->>E: carrier record
   end
-  E->>S: write enriched sighting
+  E->>S: write sighting (links the detection)
 ```
 
 ## Sequence: portal query
@@ -117,8 +121,8 @@ CV inference runs, and how carrier data is acquired.
 - **Batch** rolls sightings into `carrier_volume` (carriers per origin/destination per
   period). **The portal's city-pair query reads these batch aggregates, not raw sightings,**
   so reads are fast and cheap.
-- They reconcile through the shared sighting store: streaming writes sightings; batch reads
-  them on a schedule.
+- They reconcile through the shared store: streaming writes detections and the sightings they
+  resolve into; batch reads sightings on a schedule.
 
 ## CV inference: edge vs cloud
 - **Centralized cloud inference** (cameras upload images, cloud detects): simplest to build
